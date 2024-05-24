@@ -1,5 +1,6 @@
 from typing import Mapping, Optional, List, Any
 from util import env_exporter
+from util.keep_alive import keep_alive
 
 import discord
 import os
@@ -45,6 +46,7 @@ class CustomHelpCommand(commands.HelpCommand):
 
 
 async def run_discord_bot():
+    keep_alive()
     TOKEN = bot_token
     intents = discord.Intents.default()
     intents.message_content = True

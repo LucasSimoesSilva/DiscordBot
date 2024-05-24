@@ -27,3 +27,4 @@ soupsieve==2.5
 termcolor==1.1.0
 urllib3==2.1.0
 yarl==1.9.4
+flask~=3.0.3
