@@ -12,7 +12,6 @@ colorama==0.4.6
 cryptography==42.0.7
 discord==2.3.2
 discord.py==2.3.2
-Flask==3.0.3
 frozenlist==1.4.1
 idna==3.6
 itsdangerous==2.2.0
