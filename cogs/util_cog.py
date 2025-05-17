@@ -14,7 +14,10 @@ class Util(commands.Cog):
                                   '\nReturn:This will erase the last 2 messages')
     @commands.has_role(f'{admin_role}')
     async def clear(self, ctx, amount=0):
-        await ctx.channel.purge(limit=amount + 1)
+        if amount <= 50:
+            await ctx.channel.purge(limit=amount + 1)
+        else:
+            print('You pass the limit of messages')
 
     @commands.command(
         description='Description: Returns the amount of time left until the given date(birthday) and if the date is '
