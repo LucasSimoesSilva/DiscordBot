@@ -1,11 +1,12 @@
 from discord.ext import commands
 from util.util import time_until
-import datetime as datetime
 from collections import OrderedDict
 from util.db_actions import *
 from util.db_session import *
+from util import env_exporter
 
-FILE_BIRTHDAYS = "./files/birthdays.txt"
+admin_role = env_exporter.get_admin_role()
+all_roles = env_exporter.get_all_roles()
 
 
 class Birthday(commands.Cog):
@@ -39,8 +40,9 @@ class Birthday(commands.Cog):
         await ctx.send(result_message)
 
     @commands.command(description='Description: Add the person and his birthday in the database\n'
-                                  'Example:.add_date Lucas 21-12'
+                                  'Example:.add_date Lucas 21-12\n'
                                   'Return:Lucas birthday was added to the database')
+    @commands.has_any_role(*all_roles)
     async def add_date(self, ctx, name, date):
         exists = add_birthday(name, date)
         if exists:
@@ -49,8 +51,9 @@ class Birthday(commands.Cog):
             await ctx.send(f'{name} birthday was added to the database')
 
     @commands.command(description='Description: Remove the person from database\n'
-                                  'Example:.remove_date Lucas'
+                                  'Example:.remove_date Lucas\n'
                                   'Return:Lucas birthday was deleted from database')
+    @commands.has_role(admin_role)
     async def remove_date(self, ctx, name):
         exists = remove_birthday(name)
         if exists:
@@ -78,47 +81,39 @@ def get_all_birthdays():
     return birthdays
 
 
-def convert_date_to_sort(data):
-    return datetime.datetime.strptime(data, '%d-%m-%Y')
+def convert_date_to_sort(date: str):
+    d = datetime.datetime.strptime(date, "%d-%m")
+    return datetime.date(2000, d.month, d.day)
 
 
 def add_birthday(name, date):
-    if check_name(name):
-        file_birthdays = open(FILE_BIRTHDAYS, "a")
-        file_birthdays.write(f'\n{name} = {date}')
-        file_birthdays.close()
-        print('Birthday registered')
+    date = convert_date_to_sort(date)
+
+    db = None
+    try:
+        db = SessionLocal()
+    finally:
+        db.close()
+
+    if not user_exists(db, name):
+        create_user(db, name, date)
+        print(f'Birthday registered: {name} {date}')
         return False
     else:
-        print('Name already exists in database')
+        print(f'Name ({name}) already exists in database')
         return True
 
 
 def remove_birthday(name):
-    with open(FILE_BIRTHDAYS, 'r') as file:
-        lines = file.readlines()
+    db = None
+    try:
+        db = SessionLocal()
+    finally:
+        db.close()
 
-    found = False
-    for line in lines:
-        if name in line[:line.find('=') - 1]:
-            lines.remove(line)
-            found = True
-
-    if not found:
-        print(f"Name: {name} don't exists in the database")
-        file.close()
-        return True
-    else:
-        with open(FILE_BIRTHDAYS, 'w') as file:
-            lines[-1] = lines[-1].replace('\n', '')
-            file.writelines(lines)
-            file.close()
+    if delete_user_by_name(db, name):
         print(f"Name: {name} removed from database")
         return False
-
-
-def check_name(name):
-    all_birthdays = get_all_birthdays()
-    if name in all_birthdays:
-        return False
-    return True
+    else:
+        print(f"Name: {name} don't exists in the database")
+        return True

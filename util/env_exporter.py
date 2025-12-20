@@ -15,3 +15,10 @@ def get_admin_role():
 
 def get_bot_token():
     return bot_token
+
+def get_all_roles():
+    return [
+        value
+        for key, value in os.environ.items()
+        if key.endswith("_ROLE")
+    ]

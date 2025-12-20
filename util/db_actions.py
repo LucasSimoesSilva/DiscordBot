@@ -1,10 +1,17 @@
-from typing import Type
+from typing import Type, Any
 from sqlalchemy.orm import Session
 from models.users import User
 import datetime
 
 
-def create_user(db: Session, name: str, date: datetime) -> User:
+def user_exists(db: Session, name: str) -> bool:
+    user = db.query(User).filter(User.name == name).first()
+    if user:
+        return True
+    return False
+
+
+def create_user(db: Session, name: str, date: datetime) -> Type[User] | User:
     user = User(name=name, date=date)
     db.add(user)
     db.commit()
@@ -14,3 +21,13 @@ def create_user(db: Session, name: str, date: datetime) -> User:
 
 def list_users(db: Session) -> list[Type[User]]:
     return db.query(User).order_by(User.id.asc()).all()
+
+
+def delete_user_by_name(db: Session, name: str) -> bool:
+    user = db.query(User).filter(User.name == name).first()
+    if not user:
+        return False
+
+    db.delete(user)
+    db.commit()
+    return True
