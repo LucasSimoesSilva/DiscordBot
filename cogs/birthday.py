@@ -2,6 +2,8 @@ from discord.ext import commands
 from util.util import time_until
 import datetime as datetime
 from collections import OrderedDict
+from util.db_actions import *
+from util.db_session import *
 
 FILE_BIRTHDAYS = "./files/birthdays.txt"
 
@@ -17,20 +19,19 @@ class Birthday(commands.Cog):
     async def birthday(self, ctx):
         all_birthdays = get_all_birthdays()
         for key_all, value_all in all_birthdays.items():
-            current_year = datetime.date.today().year
-
-            value_date = datetime.datetime.strptime(value_all, '%d-%m').replace(year=int(current_year)).date()
 
             current_date = datetime.date.today()
 
-            if value_date >= current_date:
-                value_all += f'-{str(current_date.year)}'
-            else:
-                value_all += f'-{str(current_date.year + 1)}'
+            value_date = value_all.replace(year=current_date.year)
+
+            value_all = value_date
+
+            if value_date < current_date:
+                value_all = value_all.replace(year=current_date.year + 1)
 
             all_birthdays[key_all] = value_all
 
-        birthdays = OrderedDict(dict(sorted(all_birthdays.items(), key=lambda item: convert_date_to_sort(item[1]))))
+        birthdays = OrderedDict(sorted(all_birthdays.items(), key=lambda item: item[1]))
         result_message = ''
         for key, value in birthdays.items():
             result_message += f'`{key}`: {time_until(value)}\n'
@@ -63,12 +64,17 @@ async def setup(bot):
 
 
 def get_all_birthdays():
-    file_birthdays = open(FILE_BIRTHDAYS, "r")
+    db = None
     birthdays = {}
-    for line in file_birthdays:
-        name = line.find('=')
-        birthdays[line[:name - 1]] = line[name + 2:].replace('\n', '')
-    file_birthdays.close()
+    try:
+        db = SessionLocal()
+        user_list = list_users(db)
+    finally:
+        db.close()
+
+    for user in user_list:
+        birthdays[str(user.name)] = user.date
+
     return birthdays
 
 
