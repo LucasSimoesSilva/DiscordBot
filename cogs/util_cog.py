@@ -3,7 +3,7 @@ from util import util
 from util import env_exporter
 from datetime import datetime, date
 
-admin_role = env_exporter.get_admin_role()
+admin_role = int(env_exporter.get_admin_role())
 
 
 class Util(commands.Cog):
@@ -14,7 +14,7 @@ class Util(commands.Cog):
     # This command is very 'dangerous'. You can delete messages you don't want. Be careful
     @commands.command(description='Clears the number of messages given as a parameter\nExample:.clear 2'
                                   '\nReturn:This will erase the last 2 messages')
-    @commands.has_role(f'{admin_role}')
+    @commands.has_role(admin_role)
     async def clear(self, ctx, amount=0):
         if amount <= 50:
             await ctx.channel.purge(limit=amount + 1)

@@ -6,9 +6,10 @@ from collections import OrderedDict
 from util.db_actions import *
 from util.db_session import *
 from util import env_exporter
+import logging
 
-admin_role = env_exporter.get_admin_role()
-all_roles = env_exporter.get_all_roles()
+admin_role = int(env_exporter.get_admin_role())
+all_roles = [int(role) for role in env_exporter.get_all_roles()]
 
 
 class Birthday(commands.Cog):
@@ -16,10 +17,19 @@ class Birthday(commands.Cog):
     def __int__(self, bot):
         self.bot = bot
 
+    @staticmethod
+    def _has_dm_role(ctx: Context) -> bool:
+        if not ctx.guild:
+            return False
+        role = ctx.guild.get_role(int(admin_role))
+        return role is not None and role in ctx.author.roles
+
     @commands.command(aliases=['birth'], description='Description: Shows the name of all registered birthday people and'
                                                      ' how far until their birthday\n'
                                                      'Return: Lucas: 128 days until your birthday')
-    async def birthday(self, ctx: Context):
+    async def birthday(self, ctx: Context, option: str | None = None):
+        send_dm = (option or "").lower() == "dm"
+
         all_birthdays = get_all_birthdays()
         current_date = datetime.date.today()
 
@@ -31,7 +41,6 @@ class Birthday(commands.Cog):
             adjusted[name] = next_birthday
 
         birthdays = OrderedDict(sorted(adjusted.items(), key=lambda item: item[1]))
-        result_message = ''
 
         db = None
         try:
@@ -42,12 +51,38 @@ class Birthday(commands.Cog):
 
         users_by_name = {u.name: u for u in user_list}
 
-        for key, value in birthdays.items():
-            user = users_by_name.get(key)
-            user_disc_id = user.user_disc_id if user else None
-            result_message += f'`{key}`: {time_until(value, user_disc_id)}\n'
+        result_lines = []
+        birthday_today = []
 
-        await ctx.send(result_message)
+        for name, date_value in birthdays.items():
+            user = users_by_name.get(name)
+            user_disc_id = user.user_disc_id if user else None
+
+            result_lines.append(f'`{name}`: {time_until(date_value, user_disc_id)}')
+
+            if (
+                    send_dm
+                    and user_disc_id
+                    and date_value == current_date
+            ):
+                birthday_today.append(user_disc_id)
+
+        await ctx.send("\n".join(result_lines))
+
+        if not send_dm:
+            return
+
+        if not self._has_dm_role(ctx):
+            await ctx.send("You don't have permission to send birthday DMs.")
+            return
+
+        for disc_id in birthday_today:
+            try:
+                user = await ctx.bot.fetch_user(int(disc_id))
+                await user.send("Lucas te deseja um felizissimo demais e incrível aniversário :birthday: :tada::tada::tada::tada::tada:")
+            except Exception as e:
+                logging.exception(e)
+                pass
 
     @commands.command(description='Description: Add the person and his birthday in the database\n'
                                   'Example:.add_date Lucas 21-12\n'
