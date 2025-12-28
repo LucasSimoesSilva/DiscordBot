@@ -1,4 +1,4 @@
-from typing import Type, Any
+from typing import Type
 from sqlalchemy.orm import Session
 from models.users import User
 import datetime

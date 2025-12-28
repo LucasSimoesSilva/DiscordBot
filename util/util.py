@@ -1,11 +1,13 @@
 import datetime
 
 
-def time_until(date: datetime.date) -> str:
+def time_until(date: datetime.date, user_id) -> str:
     now = datetime.datetime.now()
 
     if date == now.date():
-        return '`HAPPY BIRTHDAY`'
+        if user_id is not None:
+            return f'`HAPPY BIRTHDAY` <@{user_id}>!'
+        return f'`HAPPY BIRTHDAY`'
 
     target = datetime.datetime.combine(date, datetime.time.min)
 

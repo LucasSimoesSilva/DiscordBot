@@ -1,4 +1,6 @@
 from discord.ext import commands
+from discord.ext.commands import Context
+
 from util.util import time_until
 from collections import OrderedDict
 from util.db_actions import *
@@ -17,25 +19,33 @@ class Birthday(commands.Cog):
     @commands.command(aliases=['birth'], description='Description: Shows the name of all registered birthday people and'
                                                      ' how far until their birthday\n'
                                                      'Return: Lucas: 128 days until your birthday')
-    async def birthday(self, ctx):
+    async def birthday(self, ctx: Context):
         all_birthdays = get_all_birthdays()
-        for key_all, value_all in all_birthdays.items():
+        current_date = datetime.date.today()
 
-            current_date = datetime.date.today()
+        adjusted = {}
+        for name, date_value in all_birthdays.items():
+            next_birthday = date_value.replace(year=current_date.year)
+            if next_birthday < current_date:
+                next_birthday = next_birthday.replace(year=current_date.year + 1)
+            adjusted[name] = next_birthday
 
-            value_date = value_all.replace(year=current_date.year)
-
-            value_all = value_date
-
-            if value_date < current_date:
-                value_all = value_all.replace(year=current_date.year + 1)
-
-            all_birthdays[key_all] = value_all
-
-        birthdays = OrderedDict(sorted(all_birthdays.items(), key=lambda item: item[1]))
+        birthdays = OrderedDict(sorted(adjusted.items(), key=lambda item: item[1]))
         result_message = ''
+
+        db = None
+        try:
+            db = SessionLocal()
+            user_list = list_users(db)
+        finally:
+            db.close()
+
+        users_by_name = {u.name: u for u in user_list}
+
         for key, value in birthdays.items():
-            result_message += f'`{key}`: {time_until(value)}\n'
+            user = users_by_name.get(key)
+            user_disc_id = user.user_disc_id if user else None
+            result_message += f'`{key}`: {time_until(value, user_disc_id)}\n'
 
         await ctx.send(result_message)
 
