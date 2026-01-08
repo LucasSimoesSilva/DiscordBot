@@ -31,26 +31,26 @@
     - Note: You need a Discord account for this step.
 
 3. Create a new application by clicking the `New Application button`.
-    <img src="/Images/ApplicationButton.png">
+    <img src="/assets/ApplicationButton.png">
 
 4. Fill in the initial information as desired.
 
 5. Click on the `Bot` tab on the left menu.
     1. Click the `Reset Token` button and save the given token somewhere.
     2. In the `Privileged Gateway Intents` area, enable all permissions.
-        <img src="/Images/ResetToken.png">
-        <img src="/Images/PrivilegedIntents.png">
+        <img src="/assets/ResetToken.png">
+        <img src="/assets/PrivilegedIntents.png">
 
 6. Click on the left menu on `OAuth2` and then on `URL Generator`.
 
 7. In the scope options, check the `bot` and `applications.commands` options.
-    <img src="/Images/Scopes.png">
+    <img src="/assets/Scopes.png">
 
 8. In the permission options, check the following:
     - **GENERAL PERMISSIONS** column: `Read Messages/View Channels`
     - **TEXT PERMISSIONS** column: `Send Messages`, `Manage Messages`, `Manage Threads`, `Embed Links`, `Attach Files`, `Read Message History`, `Mention Everyone`, `Use External Emojis`, `Use External Stickers`, `Add Reactions`, `Use Slash Commands`, `Use Embedded Activities`
     - **VOICE PERMISSIONS** column: `Use Embedded Activities`
-    <img src="/Images/BotPermissions.png">
+    <img src="/assets/BotPermissions.png">
 
 9. Copy the URL created at the end of the page and paste it into your preferred browser.
     - Log in with your Discord account and choose the server you want to add the bot to.
