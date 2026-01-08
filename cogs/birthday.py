@@ -1,12 +1,14 @@
 from discord.ext import commands
 from discord.ext.commands import Context
 
-from util.util import time_until
+from util.util import *
 from collections import OrderedDict
 from util.db_actions import *
 from util.db_session import *
 from util import env_exporter
 import logging
+import datetime
+from typing import Iterable
 
 admin_role = int(env_exporter.get_admin_role())
 all_roles = [int(role) for role in env_exporter.get_all_roles()]
@@ -24,6 +26,19 @@ class Birthday(commands.Cog):
         role = ctx.guild.get_role(int(admin_role))
         return role is not None and role in ctx.author.roles
 
+    @staticmethod
+    async def _send_birthday_dms(ctx, disc_ids: Iterable[str]):
+        if not disc_ids:
+            await ctx.send("Nobody has a birthday today.")
+        for disc_id in disc_ids:
+            try:
+                user = await ctx.bot.fetch_user(int(disc_id))
+                await user.send(
+                    "Lucas te deseja um felizissimo demais e incrível aniversário :birthday: :tada::tada::tada::tada::tada:"
+                )
+            except Exception as e:
+                logging.exception(e)
+
     @commands.command(aliases=['birth'], description='Description: Shows the name of all registered birthday people and'
                                                      ' how far until their birthday\n'
                                                      'Return: Lucas: 128 days until your birthday')
@@ -33,39 +48,21 @@ class Birthday(commands.Cog):
         all_birthdays = get_all_birthdays()
         current_date = datetime.date.today()
 
-        adjusted = {}
-        for name, date_value in all_birthdays.items():
-            next_birthday = date_value.replace(year=current_date.year)
-            if next_birthday < current_date:
-                next_birthday = next_birthday.replace(year=current_date.year + 1)
-            adjusted[name] = next_birthday
-
-        birthdays = OrderedDict(sorted(adjusted.items(), key=lambda item: item[1]))
+        birthdays = birthdays_next_sorted(all_birthdays, current_date)
 
         db = None
         try:
             db = SessionLocal()
-            user_list = list_users(db)
+            users_name = users_by_name(db)
         finally:
-            db.close()
-
-        users_by_name = {u.name: u for u in user_list}
+            if db:
+                db.close()
 
         result_lines = []
-        birthday_today = []
-
         for name, date_value in birthdays.items():
-            user = users_by_name.get(name)
+            user = users_name.get(name)
             user_disc_id = user.user_disc_id if user else None
-
             result_lines.append(f'`{name}`: {time_until(date_value, user_disc_id)}')
-
-            if (
-                    send_dm
-                    and user_disc_id
-                    and date_value == current_date
-            ):
-                birthday_today.append(user_disc_id)
 
         await ctx.send("\n".join(result_lines))
 
@@ -76,13 +73,30 @@ class Birthday(commands.Cog):
             await ctx.send("You don't have permission to send birthday DMs.")
             return
 
-        for disc_id in birthday_today:
-            try:
-                user = await ctx.bot.fetch_user(int(disc_id))
-                await user.send("Lucas te deseja um felizissimo demais e incrível aniversário :birthday: :tada::tada::tada::tada::tada:")
-            except Exception as e:
-                logging.exception(e)
-                pass
+        disc_ids_today = _disc_ids_birthday_today(birthdays, users_name, current_date)
+        await self._send_birthday_dms(ctx, disc_ids_today)
+
+    @commands.command(description='Description: Sends a dm message to the birthday user if has a birthday user')
+    async def dm(self, ctx: Context):
+        all_birthdays = get_all_birthdays()
+        current_date = datetime.date.today()
+
+        birthdays_today = birthdays_today_sorted(all_birthdays, current_date)
+
+        db = None
+        try:
+            db = SessionLocal()
+            users_name = users_by_name(db)
+        finally:
+            if db:
+                db.close()
+
+        if not self._has_dm_role(ctx):
+            await ctx.send("You don't have permission to send birthday DMs.")
+            return
+
+        disc_ids_today = _disc_ids_birthday_today(birthdays_today, users_name, current_date)
+        await self._send_birthday_dms(ctx, disc_ids_today)
 
     @commands.command(description='Description: Add the person and his birthday in the database\n'
                                   'Example:.add_date Lucas 21-12\n'
@@ -126,11 +140,6 @@ def get_all_birthdays():
     return birthdays
 
 
-def convert_date_to_sort(date: str):
-    d = datetime.datetime.strptime(date, "%d-%m")
-    return datetime.date(2000, d.month, d.day)
-
-
 def add_birthday(name, date):
     date = convert_date_to_sort(date)
 
@@ -162,3 +171,37 @@ def remove_birthday(name):
     else:
         print(f"Name: {name} don't exists in the database")
         return True
+
+
+def next_birthday(date_value: datetime.date, current_date: datetime.date) -> datetime.date:
+    birthday = date_value.replace(year=current_date.year)
+    if birthday < current_date:
+        birthday = birthday.replace(year=current_date.year + 1)
+    return birthday
+
+
+def birthdays_next_sorted(all_birthdays: dict[str, datetime.date], current_date: datetime.date):
+    adjusted = {name: next_birthday(date_value, current_date) for name, date_value in all_birthdays.items()}
+    return OrderedDict(sorted(adjusted.items(), key=lambda item: item[1]))
+
+
+def birthdays_today_sorted(all_birthdays: dict[str, datetime.date], current_date: datetime.date):
+    adjusted = {
+        name: date_value.replace(year=current_date.year)
+        for name, date_value in all_birthdays.items()
+        if date_value.replace(year=current_date.year) == current_date
+    }
+    return OrderedDict(sorted(adjusted.items(), key=lambda item: item[1]))
+
+def _disc_ids_birthday_today(
+        birthdays: "OrderedDict[str, datetime.date]",
+        users_name: dict,
+        current_date: datetime.date,
+) -> list[str]:
+    disc_ids: list[str] = []
+    for name, date_value in birthdays.items():
+        user = users_name.get(name)
+        user_disc_id = user.user_disc_id if user else None
+        if user_disc_id and date_value == current_date:
+            disc_ids.append(user_disc_id)
+    return disc_ids

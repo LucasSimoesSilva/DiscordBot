@@ -31,3 +31,7 @@ def delete_user_by_name(db: Session, name: str) -> bool:
     db.delete(user)
     db.commit()
     return True
+
+def users_by_name(db: Session):
+    user_list = list_users(db)
+    return {u.name: u for u in user_list}

@@ -24,3 +24,8 @@ def time_until(date: datetime.date, user_id) -> str:
         return f'{days} days, {hours} hours, {minutes} minutes, {seconds} seconds after your birthday'
 
     return f'{days} days, {hours} hours, {minutes} minutes, {seconds} seconds left until your birthday'
+
+
+def convert_date_to_sort(date: str):
+    d = datetime.datetime.strptime(date, "%d-%m")
+    return datetime.date(2000, d.month, d.day)
