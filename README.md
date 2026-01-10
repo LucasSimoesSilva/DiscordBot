@@ -7,21 +7,108 @@
         - `.help` 'command name' -> Shows what a specific command does.
 
 ## Technologies Used
-- Language: Python 3.10.13
-- IDE: PyCharm 2023.2.3 (Professional Edition)
-- Used API: discord.py
+- Language: Python 3.10
+- Library: discord.py
+- Database: PostgreSQL 16
+- Containerization: Docker & Docker Compose
 
-<hr>
+---
 
 # How to Run the Program
 
-<br>
+There are two supported ways to run the bot:
+
+1. Docker Compose (recommended)
+2. Local Python + Postgres via Docker (for development/debug)
+
+## Option 1 — Run with Docker Compose (Recommended)
+
+### Requirements
+- Docker
+- Docker Compose
+- Discord account
+
+### Steps
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/LucasSimoesSilva/Discord-bot
+   cd Discord-bot
+   ```
+
+2. Create your `.env` file based on the example:
+   ```bash
+   cp .env.example .env
+   ```
+
+3. Edit `.env` and fill **at least** the following values:
+   - `DISCORD_TOKEN`
+   - `ADMIN_ROLE`
+   - `POSTGRES_PASSWORD`
+
+4. Build and start the application:
+   ```bash
+   docker compose up -d --build
+   ```
+
+### Stop containers
+```bash
+docker compose down
+```
+
+### Remove database data (⚠ irreversible)
+```bash
+docker compose down -v
+```
+
+### Accessing the Database (optional)
+If the Postgres service exposes the port:
+
+```yaml
+ports:
+  - "5432:5432"
+```
+
+You can connect using tools like **DBeaver** or **psql**:
+- Host: `localhost`
+- Port: `5432`
+- Database: `appdb`
+- User: `appuser`
+- Password: value from `.env`
+
+## Option 2 — Run Locally (Python) + Postgres via Docker
+
+Useful for debugging and development.
+
+### Steps
+
+1. Start only the database:
+   ```bash
+   docker compose up -d db
+   ```
+
+2. Configure your `.env` for local access:
+   ```env
+   DATABASE_URL=postgresql+psycopg2://appuser:POSTGRES_PASSWORD@localhost:5432/appdb
+   ```
+
+3. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. Run the application:
+   ```bash
+   python main.py
+   ```
+
+---
 
 ## Mandatory requirements to run the application
 - Python 3.10. Official website [python](https://www.python.org/downloads/)
 - Discord account. Official website [Discord](https://discord.com/)
 
-<hr>
+---
 
 ## Steps to run the code:
 
@@ -55,20 +142,29 @@
 9. Copy the URL created at the end of the page and paste it into your preferred browser.
     - Log in with your Discord account and choose the server you want to add the bot to.
 
-10. Open the `DiscordBot` folder with your favorite Python editor.
+10. Set up the Environment Variables
 
-11. Inside the folder, create a file named `.env`.
-    - In the file, you will add two variables, the Token that you obtained in the step 5 and the role admin, that is the name of the role in your serve that you want to have access to the 'clear command'
-      - At the moment, you can have only one role admin
+11. Start your bot
 
-Example:
-```text
-ADMIN_ROLE=The dragons
-BOT_TOKEN=AAAAAAAAAAAAABBBBBBBBBBBBBBBBCCCCCCCCCCCDDDDDDDDDDD
+---
+
+## Environment Variables
+
+The application is configured via environment variables.
+
+### Required
+```env
+DISCORD_TOKEN=CHANGE_ME
+ADMIN_ROLE=CHANGE_ME
+
+POSTGRES_DB=appdb
+POSTGRES_USER=appuser
+POSTGRES_PASSWORD=CHANGE_ME
+DATABASE_URL=postgresql+psycopg2://appuser:CHANGE_ME@db:5432/appdb
+
+# Optional (custom messages)
+BIRTHDAY_MESSAGE=Happy birthday to you
+NO_DM_PERMISSION_MESSAGE=You don't have permission to send birthday DMs.
 ```
-
-12. In a terminal of your choice inside the `DiscordBot` folder, use the command `pip install -r requirements.txt`.
-
-13. Now you can run the `main.py` file using an IDE or in the terminal with the command `python main.py`, and your bot will be operational to perform its functions within the server.
 
 - **EXTRA**: Remember that the bot must have access to the text channel where you will execute the commands.
