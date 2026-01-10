@@ -13,6 +13,9 @@ from typing import Iterable
 admin_role = int(env_exporter.get_admin_role())
 all_roles = [int(role) for role in env_exporter.get_all_roles()]
 
+BIRTHDAY_MESSAGE = os.getenv("BIRTHDAY_MESSAGE")
+NO_DM_PERMISSION_MESSAGE = os.getenv("NO_DM_PERMISSION_MESSAGE")
+
 
 class Birthday(commands.Cog):
 
@@ -33,9 +36,8 @@ class Birthday(commands.Cog):
         for disc_id in disc_ids:
             try:
                 user = await ctx.bot.fetch_user(int(disc_id))
-                await user.send(
-                    "Lucas te deseja um felizissimo demais e incrível aniversário :birthday: :tada::tada::tada::tada::tada:"
-                )
+                await user.send(BIRTHDAY_MESSAGE)
+                await ctx.send("DM sent to the birthday person.")
             except Exception as e:
                 logging.exception(e)
 
@@ -70,7 +72,7 @@ class Birthday(commands.Cog):
             return
 
         if not self._has_dm_role(ctx):
-            await ctx.send("You don't have permission to send birthday DMs.")
+            await ctx.send(NO_DM_PERMISSION_MESSAGE)
             return
 
         disc_ids_today = _disc_ids_birthday_today(birthdays, users_name, current_date)
@@ -92,7 +94,7 @@ class Birthday(commands.Cog):
                 db.close()
 
         if not self._has_dm_role(ctx):
-            await ctx.send("You don't have permission to send birthday DMs.")
+            await ctx.send(NO_DM_PERMISSION_MESSAGE)
             return
 
         disc_ids_today = _disc_ids_birthday_today(birthdays_today, users_name, current_date)
